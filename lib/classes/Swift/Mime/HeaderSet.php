@@ -100,6 +100,12 @@ interface Swift_Mime_HeaderSet extends Swift_Mime_CharsetObserver
   public function getAll($name);
   
   /**
+   * Return the name of all Headers
+   * @return array
+   */
+  public function listAll();
+  
+  /**
    * Remove the header with the given $name if it's set.
    * If multiple headers match, the actual one may be specified by $index.
    * @param string $name
