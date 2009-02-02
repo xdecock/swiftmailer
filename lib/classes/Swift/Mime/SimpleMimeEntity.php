@@ -603,7 +603,7 @@ class Swift_Mime_SimpleMimeEntity implements Swift_Mime_MimeEntity
   /**
    * Get the KeyCache used in this entity.
    */
-  protected function _getCache()
+  protected function c()
   {
     return $this->_cache;
   }
