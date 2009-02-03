@@ -47,6 +47,9 @@ class Swift_Mime_SimpleMessage extends Swift_Mime_MimePart
     parent::__construct($headers, $encoder, $cache, $charset);
     $this->getHeaders()->defineOrdering(array(
       'Return-Path',
+      'Received',
+      'DKIM-Signature',
+      'DomainKey',
       'Sender',
       'Message-ID',
       'Date',
