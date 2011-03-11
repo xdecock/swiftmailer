@@ -1,55 +1,22 @@
 <?php
 
 /*
- Autoloader and dependency injector for Swift Mailer.
- 
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
- 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>.
- 
+ * This file is part of SwiftMailer.
+ * (c) 2004-2009 Chris Corbyn
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
-define('SWIFT_CLASS_DIRECTORY', dirname(__FILE__) . '/classes');
-define('SWIFT_MAP_DIRECTORY', dirname(__FILE__) . '/dependency_maps');
-define('SWIFT_CLASSPATH', SWIFT_CLASS_DIRECTORY);
-
-/**
- * Swift's autoload implementation.
- * @param string $class
+/*
+ * Autoloader and dependency injection initialization for Swift Mailer.
  */
-function swift_autoload($class)
-{
-  if (substr($class, 0, 5) != 'Swift')
-  {
-    return;
-  }
-  
-  foreach (explode(PATH_SEPARATOR, SWIFT_CLASSPATH) as $classPath)
-  {
-    $path = $classPath . '/' . str_replace('_', '/', $class) . '.php';
-  
-    if (file_exists($path))
-    {
-      require_once $path;
-    }
-  }
-}
 
-spl_autoload_register('swift_autoload');
+//Load Swift utility class
+require_once dirname(__FILE__) . '/classes/Swift.php';
 
-//Load in dependency maps
-require_once SWIFT_MAP_DIRECTORY . '/cache_deps.php';
-require_once SWIFT_MAP_DIRECTORY . '/mime_deps.php';
-require_once SWIFT_MAP_DIRECTORY . '/transport_deps.php';
+//Start the autoloader
+Swift::registerAutoload();
 
-//Load in global library preferences
-require_once dirname(__FILE__) . '/preferences.php';
+//Load the init script to set up dependency injection
+require_once dirname(__FILE__) . '/swift_init.php';

@@ -1,25 +1,13 @@
 <?php
 
 /*
- A Simple Mime Header in Swift Mailer.
- 
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
- 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>.
- 
+ * This file is part of SwiftMailer.
+ * (c) 2004-2009 Chris Corbyn
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
-//@require 'Swift/Mime/Headers/AbstractHeader.php';
-//@require 'Swift/Mime/HeaderEncoder.php';
 
 /**
  * A Simple MIME Header.
@@ -42,11 +30,24 @@ class Swift_Mime_Headers_UnstructuredHeader
    * Creates a new SimpleHeader with $name.
    * @param string $name
    * @param Swift_Mime_HeaderEncoder $encoder
+   * @param Swift_Mime_Grammar $grammar
    */
-  public function __construct($name, Swift_Mime_HeaderEncoder $encoder)
+  public function __construct($name, Swift_Mime_HeaderEncoder $encoder, Swift_Mime_Grammar $grammar)
   {
     $this->setFieldName($name);
     $this->setEncoder($encoder);
+    parent::__construct($grammar);
+  }
+  
+  /**
+   * Get the type of Header that this instance represents.
+   * @return int
+   * @see TYPE_TEXT, TYPE_PARAMETERIZED, TYPE_MAILBOX
+   * @see TYPE_DATE, TYPE_ID, TYPE_PATH
+   */
+  public function getFieldType()
+  {
+    return self::TYPE_TEXT;
   }
   
   /**

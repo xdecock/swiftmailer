@@ -1,25 +1,13 @@
 <?php
 
 /*
- A Path Header in Swift Mailer, such a Return-Path.
- 
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
- 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>.
- 
+ * This file is part of SwiftMailer.
+ * (c) 2004-2009 Chris Corbyn
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
-//@require 'Swift/Mime/Headers/AbstractHeader.php';
-//@require 'Swift/RfcComplianceException.php';
 
 /**
  * A Path Header in Swift Mailer, such a Return-Path.
@@ -40,11 +28,23 @@ class Swift_Mime_Headers_PathHeader extends Swift_Mime_Headers_AbstractHeader
   /**
    * Creates a new PathHeader with the given $name.
    * @param string $name
+   * @param Swift_Mime_Grammar $grammar
    */
-  public function __construct($name)
+  public function __construct($name, Swift_Mime_Grammar $grammar)
   {
     $this->setFieldName($name);
-    $this->initializeGrammar();
+    parent::__construct($grammar);
+  }
+  
+  /**
+   * Get the type of Header that this instance represents.
+   * @return int
+   * @see TYPE_TEXT, TYPE_PARAMETERIZED, TYPE_MAILBOX
+   * @see TYPE_DATE, TYPE_ID, TYPE_PATH
+   */
+  public function getFieldType()
+  {
+    return self::TYPE_PATH;
   }
   
   /**
@@ -79,16 +79,14 @@ class Swift_Mime_Headers_PathHeader extends Swift_Mime_Headers_AbstractHeader
     {
       $this->_address = null;
     }
-    elseif ('' == $address
-      || preg_match('/^' . $this->getGrammar('addr-spec') . '$/D', $address))
+    elseif ('' == $address)
     {
-      $this->_address = $address;
+      $this->_address = '';
     }
     else
     {
-      throw new Swift_RfcComplianceException(
-        'Address set in PathHeader does not comply with addr-spec of RFC 2822.'
-        );
+      $this->_assertValidAddress($address);
+      $this->_address = $address;
     }
     $this->setCachedValue(null);
   }
@@ -120,6 +118,23 @@ class Swift_Mime_Headers_PathHeader extends Swift_Mime_Headers_AbstractHeader
       }
     }
     return $this->getCachedValue();
+  }
+  
+  /**
+   * Throws an Exception if the address passed does not comply with RFC 2822.
+   * @param string $address
+   * @throws Swift_RfcComplianceException If invalid.
+   * @access private
+   */
+  private function _assertValidAddress($address)
+  {
+    if (!preg_match('/^' . $this->getGrammar()->getDefinition('addr-spec') . '$/D',
+      $address))
+    {
+      throw new Swift_RfcComplianceException(
+        'Address set in PathHeader does not comply with addr-spec of RFC 2822.'
+        );
+    }
   }
   
 }

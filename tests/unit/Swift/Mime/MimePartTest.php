@@ -3,6 +3,7 @@
 require_once 'Swift/Mime/MimeEntity.php';
 require_once 'Swift/Mime/MimePart.php';
 require_once 'Swift/Mime/AbstractMimeEntityTest.php';
+require_once 'Swift/Mime/Grammar.php';
 
 class Swift_Mime_MimePartTest extends Swift_Mime_AbstractMimeEntityTest
 {
@@ -131,6 +132,32 @@ class Swift_Mime_MimePartTest extends Swift_Mime_AbstractMimeEntityTest
     $part->charsetChanged('utf-8');
   }
   
+  public function testSettingCharsetClearsCache()
+  {
+    $headers = $this->_createHeaderSet(array(), false);
+    $this->_checking(Expectations::create()
+      -> ignoring($headers)->toString() -> returns(
+        "Content-Type: text/plain; charset=utf-8\r\n"
+        )
+      -> ignoring($headers)
+      );
+    
+    $cache = $this->_createCache(false);
+    $this->_checking(Expectations::create()
+      -> one($cache)->clearKey(any(), 'body')
+      -> ignoring($cache)
+      );
+    
+    $entity = $this->_createEntity($headers, $this->_createEncoder(),
+      $cache
+      );
+    
+    $entity->setBody("blah\r\nblah!");
+    $entity->toString();
+    
+    $entity->setCharset('iso-2022');
+  }
+  
   public function testFormatIsReturnedFromHeader()
   {
     /* -- RFC 3676.
@@ -221,7 +248,7 @@ class Swift_Mime_MimePartTest extends Swift_Mime_AbstractMimeEntityTest
   
   protected function _createMimePart($headers, $encoder, $cache)
   {
-    return new Swift_Mime_MimePart($headers, $encoder, $cache);
+    return new Swift_Mime_MimePart($headers, $encoder, $cache, new Swift_Mime_Grammar());
   }
   
 }

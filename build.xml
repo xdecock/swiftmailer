@@ -11,17 +11,24 @@
       <striplinebreaks />
     </filterchain>
   </loadfile>
+  <!-- Generate version number -->
+  <loadfile property="bundle.version" srcFile="${src.versionfile}">
+    <filterchain>
+      <striplinebreaks />
+      <tokenfilter>
+        <replacestring from="Swift-" to=""/>
+      </tokenfilter>
+    </filterchain>
+  </loadfile>
   <property name="src.readmefile" value="${path}/README" />
   <property name="src.changesfile" value="${path}/CHANGES" />
   <property name="src.libdir" value="${path}/lib" />
-  <property name="src.exampledir" value="${path}/examples" />
   <property name="src.testsuite" value="${path}/test-suite" />
   <property name="src.tests" value="${path}/tests" />
   <property name="builddir.package" value="${builddir}/${bundle.name}" />
   <property name="runtests" value="" />
   <filelist id="src.licenses" dir="${path}">
-    <file name="LICENSE.GPL" />
-    <file name="LICENSE.LGPL" />
+    <file name="LICENSE" />
   </filelist>
   <fileset id="build.simpletest.unneeded"
     dir="${builddir.package}/test-suite/lib/simpletest">
@@ -36,14 +43,11 @@
   <!-- Bundle all files into a central location -->
   <target name="bundle" depends="prepare, clean, copy-classes">
     <copy file="${src.versionfile}" todir="${builddir.package}" />
+    <copy file="${src.changesfile}" todir="${builddir.package}" />
     <copy todir="${builddir.package}">
       <filelist refid="src.licenses" />
     </copy>
     <copy file="${src.readmefile}" todir="${builddir.package}" />
-    <copy file="${src.changesfile}" todir="${builddir.package}" />
-    <copy todir="${builddir.package}/examples">
-      <fileset dir="${src.exampledir}" />
-    </copy>
     <move file="${builddir.package}/tests/acceptance.conf.php.default"
       tofile="${builddir.package}/tests/acceptance.conf.php" />
     <move file="${builddir.package}/tests/smoke.conf.php.default"
@@ -69,6 +73,11 @@
   <target name="copy-classes">
     <copy todir="${builddir.package}/lib">
       <fileset dir="${src.libdir}" />
+      <filterchain>
+        <replacetokens>
+          <token key="SWIFT_VERSION_NUMBER" value="${bundle.version}"/>
+        </replacetokens>
+      </filterchain>
     </copy>
     <copy todir="${builddir.package}/test-suite">
       <fileset dir="${src.testsuite}" />

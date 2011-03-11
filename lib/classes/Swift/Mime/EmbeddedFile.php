@@ -1,27 +1,13 @@
 <?php
 
 /*
- An embedded file (such as image/audio) in Swift Mailer.
- 
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
- 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>.
- 
+ * This file is part of SwiftMailer.
+ * (c) 2004-2009 Chris Corbyn
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
-//@require 'Swift/Mime/Attachment.php';
-//@require 'Swift/Mime/ContentEncoder.php';
-//@require 'Swift/KeyCache.php';
-//@require
 
 /**
  * An embedded file, in a multipart message.
@@ -37,13 +23,14 @@ class Swift_Mime_EmbeddedFile extends Swift_Mime_Attachment
    * @param Swift_Mime_HeaderSet $headers
    * @param Swift_Mime_ContentEncoder $encoder
    * @param Swift_KeyCache $cache
+   * @param Swift_Mime_Grammar $grammar
    * @param array $mimeTypes optional
    */
   public function __construct(Swift_Mime_HeaderSet $headers,
     Swift_Mime_ContentEncoder $encoder, Swift_KeyCache $cache,
-    $mimeTypes = array())
+    Swift_Mime_Grammar $grammar, $mimeTypes = array())
   {
-    parent::__construct($headers, $encoder, $cache, $mimeTypes);
+    parent::__construct($headers, $encoder, $cache, $grammar, $mimeTypes);
     $this->setDisposition('inline');
     $this->setId($this->getId());
   }

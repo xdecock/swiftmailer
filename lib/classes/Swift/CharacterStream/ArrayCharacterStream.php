@@ -1,25 +1,13 @@
 <?php
 
 /*
- CharacterStream implementation using an array in Swift Mailer.
-
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+ * This file is part of SwiftMailer.
+ * (c) 2004-2009 Chris Corbyn
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
-//@require 'Swift/CharacterStream.php';
-//@require 'Swift/OutputByteStream.php';
 
 
 /**
@@ -31,47 +19,29 @@
 class Swift_CharacterStream_ArrayCharacterStream
   implements Swift_CharacterStream
 {
-
-  /**
-   * The char reader (lazy-loaded) for the current charset.
-   * @var Swift_CharacterReader
-   * @access private
-   */
+  
+  /** A map of byte values and their respective characters */
+  private static $_charMap;
+  
+  /** A map of characters and their derivative byte values */
+  private static $_byteMap;
+  
+  /** The char reader (lazy-loaded) for the current charset */
   private $_charReader;
 
-  /**
-   * A factory for creatiing CharacterReader instances.
-   * @var Swift_CharacterReaderFactory
-   * @access private
-   */
+  /** A factory for creatiing CharacterReader instances */
   private $_charReaderFactory;
 
-  /**
-   * The character set this stream is using.
-   * @var string
-   * @access private
-   */
+  /** The character set this stream is using */
   private $_charset;
 
-  /**
-   * Array of characters.
-   * @var string[]
-   * @access private
-   */
+  /** Array of characters */
   private $_array = array();
 
-  /**
-   * Size of the array of character
-   * @var int
-   * @access private
-   */
+  /** Size of the array of character */
   private $_array_size = array();
 
-  /**
-   * The current character offset in the stream.
-   * @var int
-   * @access private
-   */
+  /** The current character offset in the stream */
   private $_offset = 0;
 
   /**
@@ -82,6 +52,7 @@ class Swift_CharacterStream_ArrayCharacterStream
   public function __construct(Swift_CharacterReaderFactory $factory,
     $charset)
   {
+    self::_initializeMaps();
     $this->setCharacterReaderFactory($factory);
     $this->setCharacterSet($charset);
   }
@@ -121,15 +92,21 @@ class Swift_CharacterStream_ArrayCharacterStream
     $startLength = $this->_charReader->getInitialByteSize();
     while (false !== $bytes = $os->read($startLength))
     {
-      $c = array_values(unpack('C*', $bytes));
+      $c = array();
+      for ($i = 0, $len = strlen($bytes); $i < $len; ++$i)
+      {
+        $c[] = self::$_byteMap[$bytes[$i]];
+      }
       $size = count($c);
       $need = $this->_charReader
         ->validateByteSequence($c, $size);
       if ($need > 0 &&
         false !== $bytes = $os->read($need))
       {
-        // try another optimisation (array_values call unneeded)
-        $c = array_merge($c, unpack('C*', $bytes));
+        for ($i = 0, $len = strlen($bytes); $i < $len; ++$i)
+        {
+          $c[] = self::$_byteMap[$bytes[$i]];
+        }
       }
       $this->_array[] = $c;
       ++$this->_array_size;
@@ -310,20 +287,31 @@ class Swift_CharacterStream_ArrayCharacterStream
     $this->_array = array();
     $this->_array_size = 0;
   }
-
-  /**
-   * Helper to load datas in the buffer
-   *
-   * @param ressource $fp
-   * @param int $len
-   * @return array [int]
-   */
+  
   private function _reloadBuffer($fp, $len)
   {
     if (!feof($fp) && ($bytes = fread($fp, $len)) !== false)
     {
-      return unpack ('C*', $bytes);
+      $buf = array();
+      for ($i = 0, $len = strlen($bytes); $i < $len; ++$i)
+      {
+        $buf[] = self::$_byteMap[$bytes[$i]];
+      }
+      return $buf;
     }
     return false;
+  }
+  
+  private static function _initializeMaps()
+  {
+    if (!isset(self::$_charMap))
+    {
+      self::$_charMap = array();
+      for ($byte = 0; $byte < 256; ++$byte)
+      {
+        self::$_charMap[$byte] = chr($byte);
+      }
+      self::$_byteMap = array_flip(self::$_charMap);
+    }
   }
 }

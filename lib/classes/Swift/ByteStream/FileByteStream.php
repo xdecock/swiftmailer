@@ -1,27 +1,13 @@
 <?php
 
 /*
- Bi-Directional FileStream in Swift Mailer.
- 
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
- 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>.
- 
+ * This file is part of SwiftMailer.
+ * (c) 2004-2009 Chris Corbyn
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
-//@require 'Swift/ByteStream/AbstractFilterableInputStream.php';
-//@require 'Swift/InputByteStream.php';
-//@require 'Swift/FileStream.php';
-//@require 'Swift/IoException.php';
 
 /**
  * Allows reading and writing of bytes to and from a file.
@@ -61,7 +47,7 @@ class Swift_ByteStream_FileByteStream
   {
     $this->_path = $path;
     $this->_mode = $writable ? 'w+b' : 'rb';
-    $this->_quotes = get_magic_quotes_runtime();
+    $this->_quotes = ini_get('magic_quotes_runtime');
   }
   
   /**
@@ -89,12 +75,12 @@ class Swift_ByteStream_FileByteStream
     {
       if ($this->_quotes)
       {
-        set_magic_quotes_runtime(0);
+        ini_set('magic_quotes_runtime', 0);
       }
       $bytes = fread($fp, $length);
       if ($this->_quotes)
       {
-        set_magic_quotes_runtime(1);
+        ini_set('magic_quotes_runtime', 1);
       }
       $this->_offset = ftell($fp);
       return $bytes;
@@ -162,16 +148,6 @@ class Swift_ByteStream_FileByteStream
       }
     }
     return $this->_writer;
-  }
-  
-  /** Force a reload of the resource for writing */
-  private function _resetWriteHandle()
-  {
-    if (isset($this->_writer))
-    {
-      fclose($this->_writer);
-      $this->_writer = null;
-    }
   }
   
   /** Force a reload of the resource for reading */

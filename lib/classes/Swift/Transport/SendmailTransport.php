@@ -1,27 +1,13 @@
 <?php
 
 /*
- Sendmail Transport from Swift Mailer.
- 
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
- 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>.
- 
+ * This file is part of SwiftMailer.
+ * (c) 2004-2009 Chris Corbyn
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
-//@require 'Swift/Transport/EsmtpTransport.php';
-//@require 'Swift/Transport/IoBuffer.php';
-//@require 'Swift/Transport/Log.php';
-//@require 'Swift/Events/EventDispatcher.php';
 
 /**
  * SendmailTransport for sending mail through a sendmail/postfix (etc..) binary.
@@ -154,6 +140,8 @@ class Swift_Transport_SendmailTransport
         $evt->setFailedRecipients($failedRecipients);
         $this->_eventDispatcher->dispatchEvent($evt, 'sendPerformed');
       }
+      
+      $message->generateId();
     }
     elseif (false !== strpos($command, ' -bs'))
     {
@@ -161,7 +149,7 @@ class Swift_Transport_SendmailTransport
     }
     else
     {
-      $this->_throwException(new Swift_Transport_TransportException(
+      $this->_throwException(new Swift_TransportException(
         'Unsupported sendmail command flags [' . $command . ']. ' .
         'Must be one of "-bs" or "-t" but can include additional flags.'
         ));

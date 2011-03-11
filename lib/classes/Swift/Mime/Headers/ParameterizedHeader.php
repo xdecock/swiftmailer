@@ -1,27 +1,13 @@
 <?php
 
 /*
- An abstract base MIME Header in Swift Mailer.
- 
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
- 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>.
- 
+ * This file is part of SwiftMailer.
+ * (c) 2004-2009 Chris Corbyn
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
-//@require 'Swift/Mime/Headers/UnstructuredHeader.php';
-//@require 'Swift/Mime/HeaderEncoder.php';
-//@require 'Swift/Mime/ParameterizedHeader.php';
-//@require 'Swift/Encoder.php';
 
 /**
  * An abstract base MIME Header.
@@ -60,15 +46,25 @@ class Swift_Mime_Headers_ParameterizedHeader
    * @param string $name
    * @param Swift_Mime_HeaderEncoder $encoder
    * @param Swift_Encoder $paramEncoder, optional
+   * @param Swift_Mime_Grammar $grammar
    */ 
   public function __construct($name, Swift_Mime_HeaderEncoder $encoder,
-    Swift_Encoder $paramEncoder = null)
+    Swift_Encoder $paramEncoder = null, Swift_Mime_Grammar $grammar)
   {
-    $this->setFieldName($name);
-    $this->setEncoder($encoder);
+    parent::__construct($name, $encoder, $grammar);
     $this->_paramEncoder = $paramEncoder;
-    $this->initializeGrammar();
     $this->_tokenRe = '(?:[\x21\x23-\x27\x2A\x2B\x2D\x2E\x30-\x39\x41-\x5A\x5E-\x7E]+)';
+  }
+  
+  /**
+   * Get the type of Header that this instance represents.
+   * @return int
+   * @see TYPE_TEXT, TYPE_PARAMETERIZED, TYPE_MAILBOX
+   * @see TYPE_DATE, TYPE_ID, TYPE_PATH
+   */
+  public function getFieldType()
+  {
+    return self::TYPE_PARAMETERIZED;
   }
   
   /**
@@ -195,7 +191,7 @@ class Swift_Mime_Headers_ParameterizedHeader
     {
       //TODO: text, or something else??
       //... and it's not ascii
-      if (!preg_match('/^' . $this->getGrammar('text') . '*$/D', $value))
+      if (!preg_match('/^' . $this->getGrammar()->getDefinition('text') . '*$/D', $value))
       {
         $encoded = true;
         //Allow space for the indices, charset and language

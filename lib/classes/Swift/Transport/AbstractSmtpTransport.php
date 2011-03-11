@@ -1,30 +1,13 @@
 <?php
 
 /*
- The ESMTP Transport from Swift Mailer.
- 
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
- 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>.
- 
+ * This file is part of SwiftMailer.
+ * (c) 2004-2009 Chris Corbyn
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
-//@require 'Swift/Transport.php';
-//@require 'Swift/Transport/IoBuffer.php';
-//@require 'Swift/Transport/CommandSentException.php';
-//@require 'Swift/Transport/TransportException.php';
-//@require 'Swift/Mime/Message.php';
-//@require 'Swift/Events/EventDispatcher.php';
-//@require 'Swift/Events/EventListener.php';
 
 /**
  * Sends Messages over SMTP.
@@ -44,7 +27,7 @@ abstract class Swift_Transport_AbstractSmtpTransport
   protected $_started = false;
   
   /** The domain name to use in HELO command */
-  protected $_domain = 'localhost';
+  protected $_domain = '[127.0.0.1]';
   
   /** The event dispatching layer */
   protected $_eventDispatcher;
@@ -63,6 +46,7 @@ abstract class Swift_Transport_AbstractSmtpTransport
   {
     $this->_eventDispatcher = $dispatcher;
     $this->_buffer = $buf;
+    $this->_lookupHostname();
   }
   
   /**
@@ -95,19 +79,28 @@ abstract class Swift_Transport_AbstractSmtpTransport
   public function start()
   {
     if (!$this->_started)
-    {      
+    {
+      if ($evt = $this->_eventDispatcher->createTransportChangeEvent($this))
+      {
+        $this->_eventDispatcher->dispatchEvent($evt, 'beforeTransportStarted');
+        if ($evt->bubbleCancelled())
+        {
+          return;
+        }
+      }
+      
       try
       {
         $this->_buffer->initialize($this->_getBufferParams());
       }
-      catch (Swift_Transport_TransportException $e)
+      catch (Swift_TransportException $e)
       {
         $this->_throwException($e);
       }
       $this->_readGreeting();
       $this->_doHeloCommand();
       
-      if ($evt = $this->_eventDispatcher->createTransportChangeEvent($this))
+      if ($evt)
       {
         $this->_eventDispatcher->dispatchEvent($evt, 'transportStarted');
       }
@@ -143,7 +136,7 @@ abstract class Swift_Transport_AbstractSmtpTransport
     
     if (!$reversePath = $this->_getReversePath($message))
     {
-      throw new Swift_Transport_TransportException(
+      throw new Swift_TransportException(
         'Cannot send message without a sender address'
         );
     }
@@ -195,6 +188,8 @@ abstract class Swift_Transport_AbstractSmtpTransport
       $this->_eventDispatcher->dispatchEvent($evt, 'sendPerformed');
     }
     
+    $message->generateId(); //Make sure a new Message ID is used
+    
     return $sent;
   }
   
@@ -205,22 +200,31 @@ abstract class Swift_Transport_AbstractSmtpTransport
   {
     if ($this->_started)
     {
+      if ($evt = $this->_eventDispatcher->createTransportChangeEvent($this))
+      {
+        $this->_eventDispatcher->dispatchEvent($evt, 'beforeTransportStopped');
+        if ($evt->bubbleCancelled())
+        {
+          return;
+        }
+      }
+      
       try
       {
         $this->executeCommand("QUIT\r\n", array(221));
       }
-      catch (Swift_Transport_TransportException $e) {}
+      catch (Swift_TransportException $e) {}
       
       try
       {
         $this->_buffer->terminate();
       
-        if ($evt = $this->_eventDispatcher->createTransportChangeEvent($this))
+        if ($evt)
         {
           $this->_eventDispatcher->dispatchEvent($evt, 'transportStopped');
         }
       }
-      catch (Swift_Transport_TransportException $e)
+      catch (Swift_TransportException $e)
       {
         $this->_throwException($e);
       }
@@ -327,7 +331,7 @@ abstract class Swift_Transport_AbstractSmtpTransport
       $message->toByteStream($this->_buffer);
       $this->_buffer->flushBuffers();
     }
-    catch (Swift_Transport_TransportException $e)
+    catch (Swift_TransportException $e)
     {
       $this->_throwException($e);
     }
@@ -361,7 +365,7 @@ abstract class Swift_Transport_AbstractSmtpTransport
   }
   
   /** Throw a TransportException, first sending it to any listeners */
-  protected function _throwException(Swift_Transport_TransportException $e)
+  protected function _throwException(Swift_TransportException $e)
   {
     if ($evt = $this->_eventDispatcher->createTransportExceptionEvent($this, $e))
     {
@@ -392,7 +396,7 @@ abstract class Swift_Transport_AbstractSmtpTransport
     if (!$valid)
     {
       $this->_throwException(
-        new Swift_Transport_TransportException(
+        new Swift_TransportException(
           'Expected response code ' . implode('/', $wanted) . ' but got code ' .
           '"' . $code . '", with message "' . $response . '"'
           )
@@ -413,7 +417,7 @@ abstract class Swift_Transport_AbstractSmtpTransport
       }
       while (null !== $line && false !== $line && ' ' != $line{3});
     }
-    catch (Swift_Transport_TransportException $e)
+    catch (Swift_TransportException $e)
     {
       $this->_throwException($e);
     }
@@ -435,7 +439,7 @@ abstract class Swift_Transport_AbstractSmtpTransport
         $this->_doRcptToCommand($forwardPath);
         $sent++;
       }
-      catch (Swift_Transport_TransportException $e)
+      catch (Swift_TransportException $e)
       {
         $failedRecipients[] = $forwardPath;
       }
@@ -458,6 +462,10 @@ abstract class Swift_Transport_AbstractSmtpTransport
   private function _sendTo(Swift_Mime_Message $message, $reversePath,
     array $to, array &$failedRecipients)
   {
+    if (empty($to))
+    {
+      return 0;
+    }
     return $this->_doMailTransaction($message, $reversePath, array_keys($to),
       $failedRecipients);
   }
@@ -466,6 +474,10 @@ abstract class Swift_Transport_AbstractSmtpTransport
   private function _sendCc(Swift_Mime_Message $message, $reversePath,
     array $cc, array &$failedRecipients)
   {
+    if (empty($cc))
+    {
+      return 0;
+    }
     return $this->_doMailTransaction($message, $reversePath, array_keys($cc),
       $failedRecipients);
   }
@@ -483,6 +495,34 @@ abstract class Swift_Transport_AbstractSmtpTransport
         );
     }
     return $sent;
+  }
+  
+  /** Try to determine the hostname of the server this is run on */
+  private function _lookupHostname()
+  {
+    if (!empty($_SERVER['SERVER_NAME'])
+      && $this->_isFqdn($_SERVER['SERVER_NAME']))
+    {
+      $this->_domain = $_SERVER['SERVER_NAME'];
+    }
+    elseif (!empty($_SERVER['SERVER_ADDR']))
+    {
+      $this->_domain = sprintf('[%s]', $_SERVER['SERVER_ADDR']);
+    }
+  }
+  
+  /** Determine is the $hostname is a fully-qualified name */
+  private function _isFqdn($hostname)
+  {
+    //We could do a really thorough check, but there's really no point
+    if (false !== $dotPos = strpos($hostname, '.'))
+    {
+      return ($dotPos > 0) && ($dotPos != strlen($hostname) - 1);
+    }
+    else
+    {
+      return false;
+    }
   }
   
   /**

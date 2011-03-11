@@ -1,32 +1,13 @@
 <?php
 
 /*
- Factory for creating MIME Headers in Swift Mailer.
- 
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
- 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>.
- 
+ * This file is part of SwiftMailer.
+ * (c) 2004-2009 Chris Corbyn
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
-//@require 'Swift/Mime/HeaderFactory.php';
-//@require 'Swift/Mime/HeaderEncoder.php';
-//@require 'Swift/Encoder.php';
-//@require 'Swift/Mime/Headers/MailboxHeader.php';
-//@require 'Swift/Mime/Headers/DateHeader.php';
-//@require 'Swift/Mime/Headers/UnstructuredHeader.php';
-//@require 'Swift/Mime/Headers/ParameterizedHeader.php';
-//@require 'Swift/Mime/Headers/IdentificationHeader.php';
-//@require 'Swift/Mime/Headers/PathHeader.php';
 
 /**
  * Creates MIME headers.
@@ -43,6 +24,9 @@ class Swift_Mime_SimpleHeaderFactory implements Swift_Mime_HeaderFactory
   /** The Encoder used by parameters */
   private $_paramEncoder;
   
+  /** The Grammar */
+  private $_grammar;
+  
   /** The charset of created Headers */
   private $_charset;
   
@@ -50,13 +34,15 @@ class Swift_Mime_SimpleHeaderFactory implements Swift_Mime_HeaderFactory
    * Creates a new SimpleHeaderFactory using $encoder and $paramEncoder.
    * @param Swift_Mime_HeaderEncoder $encoder
    * @param Swift_Encoder $paramEncoder
+   * @param Swift_Mime_Grammar $grammar
    * @param string $charset
    */
   public function __construct(Swift_Mime_HeaderEncoder $encoder,
-    Swift_Encoder $paramEncoder, $charset = null)
+    Swift_Encoder $paramEncoder, Swift_Mime_Grammar $grammar, $charset = null)
   {
     $this->_encoder = $encoder;
     $this->_paramEncoder = $paramEncoder;
+    $this->_grammar = $grammar;
     $this->_charset = $charset;
   }
   
@@ -68,7 +54,7 @@ class Swift_Mime_SimpleHeaderFactory implements Swift_Mime_HeaderFactory
    */
   public function createMailboxHeader($name, $addresses = null)
   {
-    $header = new Swift_Mime_Headers_MailboxHeader($name, $this->_encoder);
+    $header = new Swift_Mime_Headers_MailboxHeader($name, $this->_encoder, $this->_grammar);
     if (isset($addresses))
     {
       $header->setFieldBodyModel($addresses);
@@ -85,7 +71,7 @@ class Swift_Mime_SimpleHeaderFactory implements Swift_Mime_HeaderFactory
    */
   public function createDateHeader($name, $timestamp = null)
   {
-    $header = new Swift_Mime_Headers_DateHeader($name);
+    $header = new Swift_Mime_Headers_DateHeader($name, $this->_grammar);
     if (isset($timestamp))
     {
       $header->setFieldBodyModel($timestamp);
@@ -102,7 +88,7 @@ class Swift_Mime_SimpleHeaderFactory implements Swift_Mime_HeaderFactory
    */
   public function createTextHeader($name, $value = null)
   {
-    $header = new Swift_Mime_Headers_UnstructuredHeader($name, $this->_encoder);
+    $header = new Swift_Mime_Headers_UnstructuredHeader($name, $this->_encoder, $this->_grammar);
     if (isset($value))
     {
       $header->setFieldBodyModel($value);
@@ -124,7 +110,8 @@ class Swift_Mime_SimpleHeaderFactory implements Swift_Mime_HeaderFactory
     $header = new Swift_Mime_Headers_ParameterizedHeader($name,
       $this->_encoder, (strtolower($name) == 'content-disposition')
         ? $this->_paramEncoder
-        : null
+        : null,
+        $this->_grammar
       );
     if (isset($value))
     {
@@ -146,7 +133,7 @@ class Swift_Mime_SimpleHeaderFactory implements Swift_Mime_HeaderFactory
    */
   public function createIdHeader($name, $ids = null)
   {
-    $header = new Swift_Mime_Headers_IdentificationHeader($name);
+    $header = new Swift_Mime_Headers_IdentificationHeader($name, $this->_grammar);
     if (isset($ids))
     {
       $header->setFieldBodyModel($ids);
@@ -163,7 +150,7 @@ class Swift_Mime_SimpleHeaderFactory implements Swift_Mime_HeaderFactory
    */
   public function createPathHeader($name, $path = null)
   {
-    $header = new Swift_Mime_Headers_PathHeader($name);
+    $header = new Swift_Mime_Headers_PathHeader($name, $this->_grammar);
     if (isset($path))
     {
       $header->setFieldBodyModel($path);

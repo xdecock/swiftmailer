@@ -3,6 +3,7 @@
 require_once 'Swift/Tests/SwiftUnitTestCase.php';
 require_once 'Swift/Mime/Headers/MailboxHeader.php';
 require_once 'Swift/Mime/HeaderEncoder.php';
+require_once 'Swift/Mime/Grammar.php';
 
 class Swift_Mime_Headers_MailboxHeaderTest
   extends Swift_Tests_SwiftUnitTestCase
@@ -12,6 +13,12 @@ class Swift_Mime_Headers_MailboxHeaderTest
    */
   
   private $_charset = 'utf-8';
+  
+  public function testTypeIsMailboxHeader()
+  {
+    $header = $this->_getHeader('To', $this->_getEncoder('Q', true));
+    $this->assertEqual(Swift_Mime_Header::TYPE_MAILBOX, $header->getFieldType());
+  }
   
   public function testMailboxIsSetForAddress()
   {
@@ -45,14 +52,26 @@ class Swift_Mime_Headers_MailboxHeaderTest
     $this->assertEqual(array('chris@swiftmailer.org'), $header->getAddresses());
   }
   
-  public function testSpecialCharsInNameAreQuoted()
+  public function testQuotesInNameAreQuoted()
   {
     $header = $this->_getHeader('From', $this->_getEncoder('Q', true));
     $header->setNameAddresses(array(
-      'chris@swiftmailer.org' => 'Chris Corbyn, DHE'
+      'chris@swiftmailer.org' => 'Chris Corbyn, "DHE"'
       ));
     $this->assertEqual(
-      array('"Chris Corbyn\, DHE" <chris@swiftmailer.org>'),
+      array('"Chris Corbyn, \"DHE\"" <chris@swiftmailer.org>'),
+      $header->getNameAddressStrings()
+      );
+  }
+  
+  public function testEscapeCharsInNameAreQuoted()
+  {
+    $header = $this->_getHeader('From', $this->_getEncoder('Q', true));
+    $header->setNameAddresses(array(
+      'chris@swiftmailer.org' => 'Chris Corbyn, \\escaped\\'
+      ));
+    $this->assertEqual(
+      array('"Chris Corbyn, \\\\escaped\\\\" <chris@swiftmailer.org>'),
       $header->getNameAddressStrings()
       );
   }
@@ -299,7 +318,7 @@ class Swift_Mime_Headers_MailboxHeaderTest
   
   private function _getHeader($name, $encoder)
   {
-    $header = new Swift_Mime_Headers_MailboxHeader($name, $encoder);
+    $header = new Swift_Mime_Headers_MailboxHeader($name, $encoder, new Swift_Mime_Grammar());
     $header->setCharset($this->_charset);
     return $header;
   }

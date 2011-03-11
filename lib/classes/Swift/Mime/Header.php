@@ -1,23 +1,12 @@
 <?php
 
 /*
- Header Interface in Swift Mailer.
- 
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
- 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>.
- 
+ * This file is part of SwiftMailer.
+ * (c) 2004-2009 Chris Corbyn
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
-
 
 /**
  * A MIME Header.
@@ -27,6 +16,32 @@
  */
 interface Swift_Mime_Header
 {
+  
+  /** Text headers */
+  const TYPE_TEXT = 2;
+  
+  /** Parameterized headers (text + params) */
+  const TYPE_PARAMETERIZED = 6;
+
+  /** Mailbox and address headers */
+  const TYPE_MAILBOX = 8;
+  
+  /** Date and time headers */
+  const TYPE_DATE = 16;
+  
+  /** Identification headers */
+  const TYPE_ID = 32;
+  
+  /** Address path headers */
+  const TYPE_PATH = 64;
+  
+  /**
+   * Get the type of Header that this instance represents.
+   * @return int
+   * @see TYPE_TEXT, TYPE_PARAMETERIZED, TYPE_MAILBOX
+   * @see TYPE_DATE, TYPE_ID, TYPE_PATH
+   */
+  public function getFieldType();
   
   /**
    * Set the model for the field body.

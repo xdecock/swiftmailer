@@ -1,27 +1,13 @@
 <?php
 
 /*
- Generic IoBuffer implementation from Swift Mailer.
- 
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
- 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>.
- 
+ * This file is part of SwiftMailer.
+ * (c) 2004-2009 Chris Corbyn
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
-//@require 'Swift/ByteStream/AbstractFilterableInputStream.php';
-//@require 'Swift/ReplacementFilterFactory.php';
-//@require 'Swift/Transport/IoBuffer.php';
-//@require 'Swift/Transport/TransportException.php';
 
 /**
  * A generic IoBuffer implementation supporting remote sockets and local processes.
@@ -242,7 +228,7 @@ class Swift_Transport_StreamBuffer
     }
     if (!$this->_stream = fsockopen($host, $this->_params['port'], $errno, $errstr, $timeout))
     {
-      throw new Swift_Transport_TransportException(
+      throw new Swift_TransportException(
         'Connection could not be established with host ' . $this->_params['host'] .
         ' [' . $errstr . ' #' . $errno . ']'
         );
@@ -275,7 +261,7 @@ class Swift_Transport_StreamBuffer
     stream_set_blocking($pipes[2], 0);
     if ($err = stream_get_contents($pipes[2]))
     {
-      throw new Swift_Transport_TransportException(
+      throw new Swift_TransportException(
         'Process could not be started [' . $err . ']'
         );
     }

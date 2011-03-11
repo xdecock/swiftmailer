@@ -1,38 +1,20 @@
 <?php
 
 /*
- Logger plugin in Swift Mailer.
- 
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
- 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>.
- 
+ * This file is part of SwiftMailer.
+ * (c) 2004-2009 Chris Corbyn
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
-//@require 'Swift/Events/CommandListener.php';
-//@require 'Swift/Events/CommandEvent.php';
-//@require 'Swift/Events/ResponseListener.php';
-//@require 'Swift/Events/ResponseEvent.php';
-//@require 'Swift/Events/TransportChangeListener.php';
-//@require 'Swift/Events/TransportChangeEvent.php';
-//@require 'Swift/Events/TransportExceptionEvent.php';
-//@require 'Swift/Events/TransportExceptionListener.php';
-//@require 'Swift/Events/TransportException.php';
-//@require 'Swift/Plugins/Logger.php';
 
 /**
  * Does real time logging of Transport level information.
+ * 
  * @package Swift
  * @subpackage Plugins
+ * 
  * @author Chris Corbyn
  */
 class Swift_Plugins_LoggerPlugin
@@ -41,15 +23,12 @@ class Swift_Plugins_LoggerPlugin
   Swift_Plugins_Logger
 {
   
-  /**
-   * The logger which is delegated to.
-   * @var Swift_Plugins_Logger
-   * @access private
-   */
+  /** The logger which is delegated to */
   private $_logger;
   
   /**
    * Create a new LoggerPlugin using $logger.
+   * 
    * @param Swift_Plugins_Logger $logger
    */
   public function __construct(Swift_Plugins_Logger $logger)
@@ -59,6 +38,7 @@ class Swift_Plugins_LoggerPlugin
   
   /**
    * Add a log entry.
+   * 
    * @param string $entry
    */
   public function add($entry)
@@ -76,6 +56,7 @@ class Swift_Plugins_LoggerPlugin
   
   /**
    * Get this log as a string.
+   * 
    * @return string
    */
   public function dump()
@@ -85,6 +66,7 @@ class Swift_Plugins_LoggerPlugin
   
   /**
    * Invoked immediately following a command being sent.
+   * 
    * @param Swift_Events_ResponseEvent $evt
    */
   public function commandSent(Swift_Events_CommandEvent $evt)
@@ -95,6 +77,7 @@ class Swift_Plugins_LoggerPlugin
   
   /**
    * Invoked immediately following a response coming back.
+   * 
    * @param Swift_Events_ResponseEvent $evt
    */
   public function responseReceived(Swift_Events_ResponseEvent $evt)
@@ -104,7 +87,19 @@ class Swift_Plugins_LoggerPlugin
   }
   
   /**
+   * Invoked just before a Transport is started.
+   * 
+   * @param Swift_Events_TransportChangeEvent $evt
+   */
+  public function beforeTransportStarted(Swift_Events_TransportChangeEvent $evt)
+  {
+    $transportName = get_class($evt->getSource());
+    $this->_logger->add(sprintf("++ Starting %s", $transportName));
+  }
+  
+  /**
    * Invoked immediately after the Transport is started.
+   * 
    * @param Swift_Events_TransportChangeEvent $evt
    */
   public function transportStarted(Swift_Events_TransportChangeEvent $evt)
@@ -114,7 +109,19 @@ class Swift_Plugins_LoggerPlugin
   }
   
   /**
+   * Invoked just before a Transport is stopped.
+   * 
+   * @param Swift_Events_TransportChangeEvent $evt
+   */
+  public function beforeTransportStopped(Swift_Events_TransportChangeEvent $evt)
+  {
+    $transportName = get_class($evt->getSource());
+    $this->_logger->add(sprintf("++ Stopping %s", $transportName));
+  }
+  
+  /**
    * Invoked immediately after the Transport is stopped.
+   * 
    * @param Swift_Events_TransportChangeEvent $evt
    */
   public function transportStopped(Swift_Events_TransportChangeEvent $evt)
@@ -125,6 +132,7 @@ class Swift_Plugins_LoggerPlugin
   
   /**
    * Invoked as a TransportException is thrown in the Transport system.
+   * 
    * @param Swift_Events_TransportExceptionEvent $evt
    */
   public function exceptionThrown(Swift_Events_TransportExceptionEvent $evt)
@@ -136,7 +144,7 @@ class Swift_Plugins_LoggerPlugin
     $message .= 'Log data:' . PHP_EOL;
     $message .= $this->_logger->dump();
     $evt->cancelBubble();
-    throw new Swift_Transport_TransportException($message);
+    throw new Swift_TransportException($message);
   }
   
 }

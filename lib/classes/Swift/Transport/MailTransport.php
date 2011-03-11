@@ -1,26 +1,13 @@
 <?php
 
 /*
- The basic mail() wrapper from Swift Mailer.
- 
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
- 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>.
- 
+ * This file is part of SwiftMailer.
+ * (c) 2004-2009 Chris Corbyn
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
-//@require 'Swift/Transport.php';
-//@require 'Swift/Mime/Message.php';
-//@require 'Swift/Events/EventListener.php';
 
 /**
  * Sends Messages using the mail() function.
@@ -46,12 +33,17 @@ class Swift_Transport_MailTransport implements Swift_Transport
   /** The event dispatcher from the plugin API */
   private $_eventDispatcher;
   
+  /** An invoker that calls the mail() function */
+  private $_invoker;
+  
   /**
    * Create a new MailTransport with the $log.
    * @param Swift_Transport_Log $log
    */
-  public function __construct(Swift_Events_EventDispatcher $eventDispatcher)
+  public function __construct(Swift_Transport_MailInvoker $invoker,
+    Swift_Events_EventDispatcher $eventDispatcher)
   {
+    $this->_invoker = $invoker;
     $this->_eventDispatcher = $eventDispatcher;
   }
   
@@ -126,20 +118,32 @@ class Swift_Transport_MailTransport implements Swift_Transport
     }
     
     $count = (
-      count($message->getTo())
-      + count($message->getCc())
-      + count($message->getBcc())
+      count((array) $message->getTo())
+      + count((array) $message->getCc())
+      + count((array) $message->getBcc())
       );
     
-    $to = $message->getHeaders()->get('To')->getFieldBody();
-    $subject = $message->getHeaders()->get('Subject')->getFieldBody();
+    $toHeader = $message->getHeaders()->get('To');
+    $subjectHeader = $message->getHeaders()->get('Subject');
+    
+    $to = $toHeader->getFieldBody();
+    $subject = $subjectHeader->getFieldBody();
+    
     $reversePath = $this->_getReversePath($message);
+    
+    //Remove headers that would otherwise be duplicated
+    $message->getHeaders()->remove('To');
+    $message->getHeaders()->remove('Subject');
+    
     $messageStr = $message->toString();
+    
+    $message->getHeaders()->set($toHeader);
+    $message->getHeaders()->set($subjectHeader);
     
     //Separate headers from body
     if (false !== $endHeaders = strpos($messageStr, "\r\n\r\n"))
     {
-      $headers = substr($messageStr, 0, $endHeaders . "\r\n"); //Keep last EOL
+      $headers = substr($messageStr, 0, $endHeaders) . "\r\n"; //Keep last EOL
       $body = substr($messageStr, $endHeaders + 4);
     }
     else
@@ -161,7 +165,7 @@ class Swift_Transport_MailTransport implements Swift_Transport
       $body = str_replace("\r\n.", "\r\n..", $body);
     }
     
-    if (mail($to, $subject, $body, $headers,
+    if ($this->_invoker->mail($to, $subject, $body, $headers,
       sprintf($this->_extraParams, $reversePath)))
     {
       if ($evt)
@@ -170,15 +174,14 @@ class Swift_Transport_MailTransport implements Swift_Transport
         $evt->setFailedRecipients($failedRecipients);
         $this->_eventDispatcher->dispatchEvent($evt, 'sendPerformed');
       }
-      
-      return $count;
     }
     else
     {
       $failedRecipients = array_merge(
-        array_keys($message->getTo()),
-        array_keys($message->getCc()),
-        array_keys($message->getBcc())
+        $failedRecipients,
+        array_keys((array) $message->getTo()),
+        array_keys((array) $message->getCc()),
+        array_keys((array) $message->getBcc())
         );
       
       if ($evt)
@@ -188,8 +191,12 @@ class Swift_Transport_MailTransport implements Swift_Transport
         $this->_eventDispatcher->dispatchEvent($evt, 'sendPerformed');
       }
       
-      return 0;
+      $message->generateId();
+      
+      $count = 0;
     }
+    
+    return $count;
   }
   
   /**

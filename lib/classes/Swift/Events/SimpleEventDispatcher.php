@@ -1,31 +1,13 @@
 <?php
 
 /*
- The standard EventDispatcher in Swift Mailer.
- 
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
- 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>.
- 
+ * This file is part of SwiftMailer.
+ * (c) 2004-2009 Chris Corbyn
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
-//@require 'Swift/Events/EventDispatcher.php';
-//@require 'Swift/Events/EventListener.php';
-//@require 'Swift/Events/EventObject.php';
-//@require 'Swift/Events/CommandEvent.php';
-//@require 'Swift/Events/ResponseEvent.php';
-//@require 'Swift/Events/SendEvent.php';
-//@require 'Swift/Events/TransportChangeEvent.php';
-//@require 'Swift/Events/TransportExceptionEvent.php';
 
 /**
  * The EventDispatcher which handles the event dispatching layer.
@@ -116,11 +98,11 @@ class Swift_Events_SimpleEventDispatcher implements Swift_Events_EventDispatcher
    * Create a new TransportExceptionEvent for $source.
    * 
    * @param Swift_Transport $source
-   * @param Swift_Transport_TransportException $ex
+   * @param Swift_TransportException $ex
    * @return Swift_Events_TransportExceptionEvent
    */
   public function createTransportExceptionEvent(Swift_Transport $source,
-    Swift_Transport_TransportException $ex)
+    Swift_TransportException $ex)
   {
     return new Swift_Events_TransportExceptionEvent($source, $ex);
   }

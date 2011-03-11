@@ -1,29 +1,13 @@
 <?php
 
 /*
- Disk based KeyCache in Swift Mailer.
-
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+ * This file is part of SwiftMailer.
+ * (c) 2004-2009 Chris Corbyn
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
-//@require 'Swift/KeyCache.php';
-//@require 'Swift/KeyCacheInputStream.php';
-//@require 'Swift/InputByteStream.php';
-//@require 'Swift/OutputByteStrean.php';
-//@require 'Swift/SwiftException.php';
-//@require 'Swift/IoException.php';
 
 /**
  * A KeyCache which streams to and from disk.
@@ -39,6 +23,9 @@ class Swift_KeyCache_DiskKeyCache implements Swift_KeyCache
 
   /** Signal to place pointer at end of file */
   const POSITION_END = 1;
+  
+  /** Signal to leave pointer in whatever position it currently is */
+  const POSITION_CURRENT = 2;
 
   /**
    * An InputStream for cloning.
@@ -78,7 +65,7 @@ class Swift_KeyCache_DiskKeyCache implements Swift_KeyCache
   {
     $this->_stream = $stream;
     $this->_path = $path;
-    $this->_quotes = get_magic_quotes_runtime();
+    $this->_quotes = ini_get('magic_quotes_runtime');
   }
 
   /**
@@ -109,6 +96,7 @@ class Swift_KeyCache_DiskKeyCache implements Swift_KeyCache
         break;
     }
     fwrite($fp, $string);
+    $this->_freeHandle($nsKey, $itemKey);
   }
 
   /**
@@ -143,6 +131,7 @@ class Swift_KeyCache_DiskKeyCache implements Swift_KeyCache
     {
       fwrite($fp, $bytes);
     }
+    $this->_freeHandle($nsKey, $itemKey);
   }
 
   /**
@@ -181,7 +170,7 @@ class Swift_KeyCache_DiskKeyCache implements Swift_KeyCache
       $fp = $this->_getHandle($nsKey, $itemKey, self::POSITION_START);
       if ($this->_quotes)
       {
-        set_magic_quotes_runtime(0);
+        ini_set('magic_quotes_runtime', 0);
       }
       $str = '';
       while (!feof($fp) && false !== $bytes = fread($fp, 8192))
@@ -190,8 +179,9 @@ class Swift_KeyCache_DiskKeyCache implements Swift_KeyCache
       }
       if ($this->_quotes)
       {
-        set_magic_quotes_runtime(1);
+        ini_set('magic_quotes_runtime', 1);
       }
+      $this->_freeHandle($nsKey, $itemKey);
       return $str;
     }
   }
@@ -209,7 +199,7 @@ class Swift_KeyCache_DiskKeyCache implements Swift_KeyCache
       $fp = $this->_getHandle($nsKey, $itemKey, self::POSITION_START);
       if ($this->_quotes)
       {
-        set_magic_quotes_runtime(0);
+        ini_set('magic_quotes_runtime', 0);
       }
       while (!feof($fp) && false !== $bytes = fread($fp, 8192))
       {
@@ -217,8 +207,9 @@ class Swift_KeyCache_DiskKeyCache implements Swift_KeyCache
       }
       if ($this->_quotes)
       {
-        set_magic_quotes_runtime(1);
+        ini_set('magic_quotes_runtime', 1);
       }
+      $this->_freeHandle($nsKey, $itemKey);
     }
   }
 
@@ -242,11 +233,9 @@ class Swift_KeyCache_DiskKeyCache implements Swift_KeyCache
   {
     if ($this->hasKey($nsKey, $itemKey))
     {
-      $fp = $this->_getHandle($nsKey, $itemKey, self::POSITION_END);
-      fclose($fp);
+      $this->_freeHandle($nsKey, $itemKey);
       unlink($this->_path . '/' . $nsKey . '/' . $itemKey);
     }
-    unset($this->_keys[$nsKey][$itemKey]);
   }
 
   /**
@@ -296,20 +285,31 @@ class Swift_KeyCache_DiskKeyCache implements Swift_KeyCache
    */
   private function _getHandle($nsKey, $itemKey, $position)
   {
-    if (!isset($this->_keys[$nsKey]) || !array_key_exists($itemKey, $this->_keys[$nsKey]))
+    if (!isset($this->_keys[$nsKey][$itemKey]))
     {
-      $fp = fopen($this->_path . '/' . $nsKey . '/' . $itemKey, 'w+b');
+      $openMode = $this->hasKey($nsKey, $itemKey)
+        ? 'r+b'
+        : 'w+b'
+        ;
+      $fp = fopen($this->_path . '/' . $nsKey . '/' . $itemKey, $openMode);
       $this->_keys[$nsKey][$itemKey] = $fp;
     }
     if (self::POSITION_START == $position)
     {
       fseek($this->_keys[$nsKey][$itemKey], 0, SEEK_SET);
     }
-    else
+    elseif (self::POSITION_END == $position)
     {
       fseek($this->_keys[$nsKey][$itemKey], 0, SEEK_END);
     }
     return $this->_keys[$nsKey][$itemKey];
+  }
+  
+  private function _freeHandle($nsKey, $itemKey)
+  {
+    $fp = $this->_getHandle($nsKey, $itemKey, self::POSITION_CURRENT);
+    fclose($fp);
+    $this->_keys[$nsKey][$itemKey] = null;
   }
 
   /**

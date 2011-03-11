@@ -4,6 +4,7 @@ require_once 'Swift/Tests/SwiftUnitTestCase.php';
 require_once 'Swift/Mime/Headers/ParameterizedHeader.php';
 require_once 'Swift/Mime/HeaderEncoder.php';
 require_once 'Swift/Encoder.php';
+require_once 'Swift/Mime/Grammar.php';
 
 class Swift_Mime_Headers_ParameterizedHeaderTest
   extends Swift_Tests_SwiftUnitTestCase
@@ -11,6 +12,14 @@ class Swift_Mime_Headers_ParameterizedHeaderTest
  
   private $_charset = 'utf-8';
   private $_lang = 'en-us';
+  
+  public function testTypeIsParameterizedHeader()
+  {
+    $header = $this->_getHeader('Content-Type',
+      $this->_getHeaderEncoder('Q', true), $this->_getParameterEncoder(true)
+      );
+    $this->assertEqual(Swift_Mime_Header::TYPE_PARAMETERIZED, $header->getFieldType());
+  }
   
   public function testValueIsReturnedVerbatim()
   {
@@ -381,7 +390,7 @@ class Swift_Mime_Headers_ParameterizedHeaderTest
   private function _getHeader($name, $encoder, $paramEncoder)
   {
     $header = new Swift_Mime_Headers_ParameterizedHeader($name, $encoder,
-      $paramEncoder
+      $paramEncoder, new Swift_Mime_Grammar()
       );
     $header->setCharset($this->_charset);
     return $header;
